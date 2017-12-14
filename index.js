@@ -1,3 +1,3 @@
-var document = require('./src/document.js')
+var Document = require('./src/Document.js')
 
-module.exports = document;
+module.exports = Document;

@@ -1,11 +1,15 @@
-const request = require('request');
-const xml2js = require('xml2js').parseString;
+const axios = require('axios');
+const parseString = require('xml2js').parseString;
 
-module.exports = class document {
+module.exports = class Document {
   constructor(shopID) {
     this.resolveTable = {
       'impressum': 'Impressum',
       'agb': 'AGB',
+      'datenschutz': 'Datenschutz',
+      'widerruf': 'Widerruf',
+      'versandinfo': 'Versandinfo',
+      'batteriegesetz': 'Batteriegesetz',
       'html': 'Html',
       'text': 'Text',
       'html-lite': 'HtmlLite',
@@ -18,21 +22,33 @@ module.exports = class document {
     return this.resolveTable[name];
   }
 
-  getDocument(name, format, callback) {
-    this.fetch(this.resolve(name), this.resolve(format), callback)
+  getDocument(name, format) {
+    return this.fetch(this.resolve(name), this.resolve(format));
   }
 
-  fetch(name, format, callback) {
-    var url = 'https://www.protectedshops.de/api/?Request=GetDocument&ShopId='+this.shopID+'&Document='+name+'&Format='+format;
-    request
-      .get(url, function(error, response, body) {
-        if(response.statusCode == 200) {
-          xml2js(body, function(err, result) {
-            callback(result['Response']['Document']);
-          });
-        } else {
-          callback('');
+  fetch(name, format) {
+    const shopID = this.shopID;
+    return new Promise(function (resolve, reject) {
+      axios.get('https://www.protectedshops.de/api/', {
+        params: {
+          Request: 'GetDocument',
+          ShopId: shopID,
+          'Document': name,
+          Format: format
         }
+      }).then(function (response) {
+        if(response.status == 200) {
+          parseString(response.data, function (error, result) {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result['Response']['Document'][0]);
+            }
+          });
+        }
+      }).catch(function (error) {
+        reject(error);
       });
+    });
   }
 }
